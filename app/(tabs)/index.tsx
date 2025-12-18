@@ -1,98 +1,128 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import Quadrado from "@/components/Quadrado";
+import { calcularVencedor, verificarEmpate } from "@/scripts/utils";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+// ----------------------------------------------
+//                TELA INICIAL
+// ----------------------------------------------   
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+export default function Index() {
 
-export default function HomeScreen() {
+  // --------------------------------
+  //        ESTADOS DO COMPONENTE
+  // -------------------------------- 
+  const [tabuleiro, setTabuleiro] = useState<(string | null)[]>(
+    Array(9).fill(null)
+  );
+  const [xEhAVez, setXEhAVez] = useState(true);
+
+  const resultado = calcularVencedor(tabuleiro);
+  const vencedor = resultado?.jogador;
+  const linhaVencedora = resultado?.linha;
+  const empate = !vencedor && verificarEmpate(tabuleiro);
+
+  // --------------------------------
+  //        FUNÇÕES DO COMPONENTE
+  // -------------------------------- 
+  function handlePress(indice: number) {
+    // não permite sobrescrever
+    if (tabuleiro[indice] || vencedor) return;
+
+    // cria cópia do tabuleiro
+    const novoTabuleiro = [...tabuleiro];
+
+    // define X ou O
+    novoTabuleiro[indice] = xEhAVez ? "X" : "O";
+
+    // atualiza estado
+    setTabuleiro(novoTabuleiro);
+    setXEhAVez(!xEhAVez);
+  }
+
+  // reinicia o jogo
+  function resetarJogo() {
+  setTabuleiro(Array(9).fill(null));
+  setXEhAVez(true);
+}
+
+// --------------------------------
+//        RENDERIZAÇÃO
+// -------------------------------- 
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <View style={styles.container}>
+      <Text style={styles.text}>Jogo da Velha</Text>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      <Text style={styles.status}>
+  {vencedor
+    ? `Vencedor: ${vencedor}`
+    : empate
+    ? "Empate!"
+    : `Vez de: ${xEhAVez ? "X" : "O"}`}
+</Text>
+      {/* Tabuleiro */}
+      <View style={styles.board}>
+        {tabuleiro.map((valor, indice) => (
+          <Quadrado
+            key={indice}
+            valor={valor}
+            onPress={() => handlePress(indice)}
+             destaque={linhaVencedora?.includes(indice)}
+          />
+        ))}
+      </View>
+      {/* Botão para resetar o jogo */}
+      <Pressable style={styles.botaoReset} onPress={resetarJogo}>
+        <Text style={styles.textoBotao}>Resetar jogo</Text>
+      </Pressable>
+
+    </View>
   );
 }
 
+// ----------------------------------------------
+//              ESTILIZAÇÕES (CSS caseiro)
+// ----------------------------------------------
+
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: "#0f172a", // FORÇA FUNDO BRANCO
+    color: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  text: {
+    fontSize: 48,
+    fontWeight: "bold",
+    textAlign: "center",
+    color: "#fff", // FORÇA TEXTO BRANCO
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  board: {
+    width: 300,              // 3 colunas * 100 pixels cada
+    height: 300,             // 3 linhas * 100 pixels cada
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
+  status: {
+  marginBottom: 20,
+  color: "#fff",
+  fontFamily: "Arial",
+  fontSize : 24,
+  fontWeight: "bold",
+},
+botaoReset: {
+  marginTop: 24,
+  paddingVertical: 12,
+  paddingHorizontal: 24,
+  backgroundColor: "#e74c3c",
+  borderRadius: 8,
+},
+
+textoBotao: {
+  color: "#fff",
+  fontSize: 18,
+  fontWeight: "bold",
+},
+
 });
